@@ -22,4 +22,4 @@ export async function proxy(request: NextRequest) {
   await client.auth.getUser();
   return response;
 }
-export const config = { matcher: ['/', '/login', '/eventos/:path*'] };
+export const config = { matcher: ['/', '/login', '/eventos/:path*', '/agenda', '/materiais', '/tarefas', '/fornecedores'] };

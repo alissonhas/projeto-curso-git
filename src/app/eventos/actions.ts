@@ -15,7 +15,7 @@ export async function saveEvent(_state: EventState, form: FormData): Promise<Eve
     });
     if (error || !data || !['saved', 'conflict'].includes(data.status)) return { status: 'error', message: 'Não foi possível confirmar o salvamento. Seu rascunho foi preservado; tente reenviar sem alterá-lo.' };
     if (data.status === 'conflict') return { status: 'conflict', message: 'Este evento mudou em outra sessão. Seu rascunho foi preservado. Compare as versões antes de continuar.', current: data.current };
-    revalidatePath('/eventos');
+    for (const path of ['/eventos', '/agenda', '/materiais', '/tarefas']) revalidatePath(path);
     return { status: 'saved', message: event.deleted ? 'Evento excluído.' : 'Evento salvo.' };
   } catch { return { status: 'error', message: 'Sem confirmação do servidor. Seu rascunho foi preservado; tente novamente.' }; }
 }

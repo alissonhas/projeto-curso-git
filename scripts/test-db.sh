@@ -12,7 +12,7 @@ for attempt in {1..30}; do
   sleep 1
 done
 if [ "$ready" != true ]; then docker logs "$container"; exit 1; fi
-for file in tests/sql/bootstrap.sql supabase/migrations/202610140001_private_events.sql tests/sql/events.sql; do
+for file in tests/sql/bootstrap.sql supabase/migrations/202610140001_private_events.sql tests/sql/events.sql supabase/migrations/202610140002_planning.sql tests/sql/planning.sql; do
   docker exec -i "$container" psql -U postgres -v ON_ERROR_STOP=1 < "$file"
 done
 # Duas chamadas concorrentes com o mesmo UUID de operação devem criar um registro só.
@@ -46,5 +46,20 @@ do $$ begin
  if (select count(*) from public.event_operations where operation_id in ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa10','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa11') and result->>'status'='saved') <> 1 then raise exception 'Concurrent winners'; end if;
  if (select count(*) from public.event_operations where operation_id in ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa10','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa11') and result->>'status'='conflict') <> 1 then raise exception 'Concurrent conflict missing'; end if;
  raise notice 'PASS: concurrent version conflict';
+end; $$;
+SQL
+# O protocolo de novos cadastros também precisa resistir a retries simultâneos.
+docker exec -i "$container" psql -U postgres -v ON_ERROR_STOP=1 < tests/sql/planning-concurrent.sql >/dev/null &
+first_pid=$!
+docker exec -i "$container" psql -U postgres -v ON_ERROR_STOP=1 < tests/sql/planning-concurrent.sql >/dev/null &
+second_pid=$!
+wait "$first_pid"
+wait "$second_pid"
+docker exec -i "$container" psql -U postgres -v ON_ERROR_STOP=1 <<'SQL'
+do $$ begin
+ if (select count(*) from public.planning_records where id='20000000-0000-4000-8000-000000000099')<>1 then raise exception 'Concurrent planning duplicate';end if;
+ if (select version from public.planning_records where id='20000000-0000-4000-8000-000000000099')<>1 then raise exception 'Concurrent planning changed version';end if;
+ if (select count(*) from public.planning_operations where operation_id='10000000-0000-4000-8000-000000000099')<>1 then raise exception 'Concurrent planning operation duplicate';end if;
+ raise notice 'PASS: concurrent planning retry';
 end; $$;
 SQL

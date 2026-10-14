@@ -14,8 +14,10 @@ test('acesso privado e login sem configuração', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeDisabled();
   await expect(page.getByText('IDEIAS EM MOVIMENTO', { exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.goto('/eventos');
-  await expect(page).toHaveURL(/\/login$/);
+  for (const path of ['/eventos','/agenda','/materiais','/tarefas','/fornecedores']) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/login$/);
+  }
   await expect(page.getByRole('heading', { name: 'Eventos', exact: true })).toHaveCount(0);
 });
 test('manifesto e ícones válidos, worker e tela offline sem dados privados', async ({ page, context }) => {

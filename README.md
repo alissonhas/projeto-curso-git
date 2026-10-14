@@ -1,6 +1,6 @@
-# Marca AH Produções — v0.2
+# Marca AH Produções — v0.3
 
-Aplicação web pessoal em Next.js 16, TypeScript e Tailwind 4. Logo AH, navegação responsiva, login por e-mail/senha com Supabase, autorização por lista de usuários e primeiro módulo de Eventos. PWA com instalação e página offline sem dados privados em cache.
+Aplicação web pessoal em Next.js 16, TypeScript e Tailwind 4. Logo AH, navegação responsiva, login por e-mail/senha com Supabase, autorização por lista de usuários e Eventos, agenda automática, materiais por evento, ações com responsáveis e fornecedores básicos. PWA com instalação e página offline sem dados privados em cache.
 
 ## Ativar na Vercel e no Supabase
 
@@ -83,8 +83,30 @@ O teste usa uma imagem fixada por digest, sem porta exposta e sem rede no contê
 - Eventos possuem UUID estável, `user_id` derivado de `auth.uid()` no servidor, `created_at`, `updated_at`, `deleted_at` e `version`. RLS restringe leituras. Escritas diretas são revogadas: a única entrada é `mutate_event`, que verifica usuário autorizado, valida entradas e opera em transação.
 - `event_operations` guarda UUID de operação, payload e resultado por usuário. Retry da mesma operação devolve o resultado anterior. Reutilização do UUID para outro payload é rejeitada. Locks transacionais serializam criações concorrentes e comparação de versão; conflitos não aplicam o rascunho automaticamente.
 - Os formulários preservam o rascunho ao falhar ou detectar conflito. Fechar/recarregar a página descarta o rascunho local: não há IndexedDB ou fila de sincronização nesta entrega. Não armazene dados locais privados sem uma política explícita de troca de usuário e limpeza.
-- A lista exibe até 100 eventos. Paginação, restauração de exclusões, recuperação de senha na interface, auditoria e gerenciamento de usuários ainda não estão implementados. O administrador pode redefinir o acesso no Supabase.
-- Agenda, tarefas, materiais, contatos e despesas continuam em preparação. Valores financeiros serão armazenados em centavos inteiros ou decimal; custos estimados de materiais não serão somados às despesas realizadas.
+- Eventos, agenda e planejamento carregam todas as páginas das consultas. Restauração de exclusões, recuperação de senha na interface, auditoria e gerenciamento de usuários ainda não estão implementados. O administrador pode redefinir o acesso no Supabase.
+- Contatos gerais e despesas continuam em preparação; fornecedores possuem cadastro separado. Materiais registram quantidades inteiras em unidades e fornecedor opcional, sem valores financeiros. Cada ação exige nome do responsável e pode ser marcada como concluída. Valores financeiros serão armazenados em centavos inteiros ou decimal; custos estimados de materiais não serão somados às despesas realizadas.
 - Próxima etapa: validar esta fatia em Supabase real e dispositivo móvel, depois adicionar Dexie/IndexedDB e fila com confirmação persistida, resolução explícita de conflitos e tombstones, antes de anunciar sincronização offline.
 
 A logo é uma adaptação da imagem enviada pelo usuário. Não há credenciais ou dados pessoais no repositório.
+
+## Atualizar do v0.2 para v0.3 (projeto já configurado)
+
+**Não execute novamente a primeira migração.** No SQL Editor do Supabase, execute uma vez somente [202610140002_planning.sql](supabase/migrations/202610140002_planning.sql). Ela adiciona `planning_records`, `planning_operations`, RLS e a função transacional de cadastro; não remove ou modifica seus eventos e usuários existentes. Novos projetos devem executar a migração 001 e depois a 002. Não há novas variáveis de ambiente.
+
+A agenda utiliza a tabela `events` existente: todos os eventos ativos aparecem agrupados por mês, sem cadastro adicional nem cópias. Ao mudar a data ou excluir um evento, a agenda reflete o estado atual quando carregada novamente.
+
+Em Eventos, use **Materiais do evento** ou **Ações e responsáveis**. Esses links filtram o planejamento daquele evento. Nos módulos gerais, é possível selecionar o evento no formulário, alterar os vínculos e editar/excluir os registros. **Fornecedores** contém somente nome, contato e produto ofertado como informações de negócio. Quantidades de materiais são inteiras e não geram despesas automaticamente.
+
+Responsáveis são nomes informados pelo usuário, sem criar contas de acesso para essas pessoas. Fornecedores também não recebem acesso ao app. Todas as consultas e ações continuam exigindo o usuário autenticado e autorizado; o banco verifica a propriedade dos eventos e fornecedores antes de aceitar um vínculo.
+
+Os novos registros possuem UUID, `user_id`, timestamps, versão, exclusão lógica e confirmação persistida por operação. Duplicação de envio retorna o resultado anterior, e conflitos exigem comparação/resolução explícita com o rascunho preservado. Ao excluir um evento ou fornecedor, vínculos históricos permanecem; não é possível atribuir novos cadastros a pais excluídos. Para salvar alterações de um material ligado a fornecedor excluído, escolha outro fornecedor ou “Sem fornecedor definido”. A exclusão lógica do próprio material/ação continua permitida.
+
+Teste no app real após aplicar a migração:
+
+1. Abra Agenda e confira o evento já cadastrado. Altere sua data em Eventos e confirme a nova posição na Agenda.
+2. Cadastre um fornecedor com nome, contato e produto ofertado, edite-o e recarregue.
+3. No evento, adicione um material, quantidade e fornecedor; altere a quantidade e confirme a persistência.
+4. Adicione uma ação e seu responsável; altere o responsável, marque como concluída e recarregue.
+5. Repita a edição em duas abas para verificar conflitos. Exclua um registro de teste e confirme que sai das listas.
+
+A nova migração, RLS, vínculos, atualizações e retries são testados em PostgreSQL descartável; formulários e ações têm testes locais. A nova integração no seu Supabase depende da aplicação da migração e desse teste autenticado. O suporte offline continua restrito à página pública de aviso: não há edição nem sincronização offline.

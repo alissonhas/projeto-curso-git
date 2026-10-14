@@ -27,5 +27,5 @@ describe('Configuração pública', () => {
   });
 });
 it('define identificadores únicos para todas as áreas', () => {
-  expect(new Set(sections.map(section => section.slug)).size).toBe(7);
+  expect(new Set(sections.map(section => section.slug)).size).toBe(8);
 });
