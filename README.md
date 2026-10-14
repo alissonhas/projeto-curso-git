@@ -1,28 +1,61 @@
-# Marca AH Produções
+# Marca AH Produções — v0.2
 
-Fundação inicial de uma aplicação pessoal de gestão de produções. Interface em português brasileiro, responsiva, com identidade visual e navegação entre visão geral, eventos, agenda, tarefas, materiais, contatos e despesas.
+Aplicação web pessoal em Next.js 16, TypeScript e Tailwind 4. Logo AH, navegação responsiva, login por e-mail/senha com Supabase, autorização por lista de usuários e primeiro módulo de Eventos. PWA com instalação e página offline sem dados privados em cache.
 
-## Executar
+## Ativar na Vercel e no Supabase
 
-Requer Node.js 24 e npm 11 (versões usadas na validação).
+O login fica bloqueado se não houver configuração. Não existe usuário/senha padrão nem modo de acesso sem autenticação.
+
+1. Crie um projeto em [Supabase](https://supabase.com/dashboard). Guarde a senha do banco com segurança; a aplicação não usa essa senha.
+2. Abra **SQL Editor** e execute o conteúdo de [supabase/migrations/202610140001_private_events.sql](supabase/migrations/202610140001_private_events.sql) uma vez no projeto novo. Se já tiver outras tabelas com esses nomes, revise antes de aplicar. Não execute os arquivos em `tests/sql` no projeto real: são fixtures exclusivas do banco descartável.
+3. Em **Authentication → Users**, crie seu usuário com e-mail e senha; marque confirmação automática de e-mail se estiver criando manualmente. Copie o UUID desse usuário. Não envie a senha em chat nem coloque em código.
+4. Autorize somente esse UUID, executando no SQL Editor (substitua o texto abaixo pelo UUID real):
+
+```sql
+insert into public.app_members (user_id)
+values ('UUID_DO_USUARIO')
+on conflict (user_id) do nothing;
+```
+
+5. Desabilite a opção de novos cadastros nas configurações de **Authentication / Sign In / Providers**. Não há cadastro público na interface, mas a configuração do provedor também deve impedir novos cadastros. Configure a URL do seu site Vercel no Supabase. Esta entrega usa senha e não depende de redirecionamento OAuth ou link mágico.
+6. Copie a **Project URL** e a chave **Publishable** (`sb_publishable_…`) em Settings/API Keys do projeto. Na Vercel, abra **Project → Settings → Environment Variables** e adicione:
+   - `NEXT_PUBLIC_SUPABASE_URL`: URL HTTPS do projeto.
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: chave pública Publishable.
+7. Aplique as variáveis aos ambientes desejados e faça **Redeploy** na Vercel. Entre com o usuário criado e abra Eventos.
+
+Nunca use `service_role`, `sb_secret_…`, senha de banco ou credenciais administrativas nas variáveis públicas. A chave pública sozinha não autoriza acesso aos dados: RLS e a função de mutação verificam a identidade autenticada e a lista `app_members`. Arquivos `.env.local` são ignorados pelo Git.
+
+## O que testar depois da configuração real
+
+- Sem login, `/` e `/eventos` redirecionam para `/login`.
+- Senha incorreta exibe mensagem sem revelar detalhes internos. Um usuário autenticado fora de `app_members` também deve ser bloqueado.
+- Seu usuário autorizado entra, cria um evento e vê o mesmo evento ao recarregar e em outro dispositivo.
+- Abra o mesmo evento em duas abas. Salve uma alteração na primeira e tente salvar uma edição antiga na segunda: aparece a versão do servidor, o rascunho permanece preenchido e só é sobrescrito após resolução explícita. Mudanças adicionais geram novo conflito.
+- Excluir exige confirmar no formulário. O evento desaparece da lista; `deleted_at` fica preenchido no banco, preservando o tombstone.
+- Use **Sair** e confirme que voltar a uma rota privada exige login. O cookie é HttpOnly e o servidor não usa cache compartilhado para respostas autenticadas.
+- Instale pelo navegador e teste abrir online/offline. Não interprete a instalação como suporte a edição offline.
+
+A integração com um projeto Supabase real e a instalação em um aparelho físico precisam dessa configuração e desses testes. Os testes locais descritos abaixo não substituem essa validação.
+
+## Instalar como aplicativo
+
+O site publicado precisa de HTTPS. Em Chrome/Edge e Android, use a opção **Instalar app** no menu; o botão da interface aparece quando o navegador oferece o evento de instalação. No iPhone, abra no Safari e use **Compartilhar → Adicionar à Tela de Início**. Não é necessário instalar Node.js no celular nem gerar APK.
+
+Manifesto, ícones PNG nos tamanhos exigidos e Service Worker estão implementados. O worker funciona no build de produção e guarda somente logo, ícones e `offline.html`. Navegações online sempre consultam a rede; sem rede, aparece uma página pública informando a limitação. HTML autenticado, chamadas de API, respostas RSC e dados Supabase não entram no cache do worker. A sessão exige rede para validação.
+
+## Executar localmente
+
+Requer Node.js 24 e npm 11. No diretório do checkout:
 
 ```sh
 npm ci
+# Para login real, copie .env.example para .env.local e configure as variáveis públicas.
 npm run dev
 ```
 
-Execute no diretório do checkout. Para produção: `npm run build` e `npm start`.
+Para produção/PWA: `npm run build` e `npm start`. Cada tarefa na nuvem já é isolada: use o checkout existente, sem criar worktrees.
 
-## Configuração
-
-Copie `.env.example` para `.env.local` quando preparar a integração real. Variáveis públicas previstas:
-
-- `NEXT_PUBLIC_SUPABASE_URL`: URL HTTPS do projeto Supabase.
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: chave pública `sb_publishable_…`.
-
-Nenhuma variável é necessária para executar esta fundação. O código verifica somente o formato; não faz conexão e não comprova autenticação. Não foram criadas credenciais nem banco de dados. Nunca use `service_role`, `sb_secret_…`, senha do banco ou credenciais administrativas em variáveis `NEXT_PUBLIC_*`. Arquivos locais de ambiente são ignorados pelo Git. Não há necessidade de chave administrativa nesta entrega.
-
-## Verificação
+## Verificações automatizadas
 
 ```sh
 npm run test
@@ -32,28 +65,26 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Se já houver Chromium instalado, use `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e` para dispensar o download.
+Se Chromium estiver instalado: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e` (sintaxe Bash). Playwright usa porta 3100, build de produção e variáveis Supabase vazias propositalmente, para verificar que a ausência de configuração bloqueia o acesso, os ícones carregam, a navegação offline recupera a tela pública e não são cacheadas páginas privadas. O perfil móvel é uma emulação Chromium, não teste de instalação em iPhone/Android físico.
 
-Os testes unitários validam configuração, navegação declarada e formatação. Playwright abre o aplicativo em Chromium com tamanhos desktop e móvel, exercita todas as áreas e verifica o menu e a ausência de transbordamento horizontal. A instalação do navegador é um preparo local de testes; não faz parte da aplicação.
+Vitest valida entradas, formato monetário em centavos, configuração, gates de autenticação com mocks e preservação de rascunhos/conflitos no formulário. Mocks não comprovam uma integração Supabase real.
 
-## Limites desta entrega
+Para validar a migração e as regras no PostgreSQL 17 (Docker, Bash e internet no primeiro download):
 
-A aplicação não autentica, cadastra, consulta ou salva informações. Os módulos exibem estados de preparação. Não há dados pessoais, registros de demonstração, proteção de rotas, RLS, banco local, Service Worker, instalação PWA ou sincronização implementados. `robots` desabilitado não constitui controle de acesso. Não publicar como sistema privado funcional nem inserir dados sensíveis antes da implementação e validação de autenticação e RLS.
+```sh
+npm run test:db
+```
 
-## Próximas etapas e contratos
+O teste usa uma imagem fixada por digest, sem porta exposta e sem rede no contêiner; cria um banco descartável e o remove ao final. Simula os papéis `anon`/`authenticated` e `auth.uid()` para executar RLS, mutações, conflito de versão, tombstones, retries e tentativas concorrentes. Nunca utiliza o banco de produção. Não testa o serviço Supabase Auth, a emissão real de JWTs ou as configurações do seu projeto.
 
-1. Configurar um projeto real Supabase e implementar login, sessão e proteção de rotas. Desabilitar cadastro público para o uso inicial por um único usuário. Criar migrações e testar RLS com sessões de usuários diferentes e acesso anônimo antes de armazenar dados.
-2. Implementar um primeiro módulo vertical, recomendado eventos, com UUID estável, `user_id`, `created_at`, `updated_at`, `deleted_at` e versão para concorrência. RLS deve restringir todas as operações a `auth.uid() = user_id`, incluindo validação de inserção e atualização. Não aceitar `user_id` arbitrário do navegador como autorização.
-3. Adicionar Dexie/IndexedDB para armazenamento local e uma fila de operações. Cada operação terá UUID próprio e confirmação persistida no servidor por usuário. Repetições devem retornar o resultado anterior. A atualização usa comparação atômica de versão: conflito preserva ambas as versões para resolução explícita, sem sobrescrever silenciosamente. Exclusões usam tombstones e também participam desse protocolo. Implementar e testar antes de anunciar suporte offline.
-4. Adicionar manifesto, ícones e Service Worker com política de cache explícita, evitando cache de respostas autenticadas compartilhadas. Limpar dados locais ao sair/trocar usuário e definir os limites de privacidade do dispositivo. Validar instalação e recuperação offline em dispositivo móvel real.
-5. Expandir módulos após validar a primeira fatia e a sincronização. Dinheiro será armazenado como centavos inteiros, com limites seguros ou decimal no PostgreSQL; entrada decimal deve ser convertida por parsing textual validado. Estimativas de materiais permanecem separadas de despesas realizadas.
+## Dados, segurança e limites
 
-Next.js App Router e TypeScript estrito sustentam a estrutura; Tailwind CSS 4 está configurado via PostCSS, com tokens e estilos responsivos em `globals.css`. Bibliotecas de Supabase e Dexie serão adicionadas quando suas integrações forem implementadas, evitando dependências sem uso. A navegação atual é estado local de interface; URLs individuais serão introduzidas com os módulos reais.
+- `app_members` autoriza explicitamente o usuário inicial. Usuários não podem se autorizar pela API. Para futura expansão, somente o administrador adiciona novos UUIDs.
+- Eventos possuem UUID estável, `user_id` derivado de `auth.uid()` no servidor, `created_at`, `updated_at`, `deleted_at` e `version`. RLS restringe leituras. Escritas diretas são revogadas: a única entrada é `mutate_event`, que verifica usuário autorizado, valida entradas e opera em transação.
+- `event_operations` guarda UUID de operação, payload e resultado por usuário. Retry da mesma operação devolve o resultado anterior. Reutilização do UUID para outro payload é rejeitada. Locks transacionais serializam criações concorrentes e comparação de versão; conflitos não aplicam o rascunho automaticamente.
+- Os formulários preservam o rascunho ao falhar ou detectar conflito. Fechar/recarregar a página descarta o rascunho local: não há IndexedDB ou fila de sincronização nesta entrega. Não armazene dados locais privados sem uma política explícita de troca de usuário e limpeza.
+- A lista exibe até 100 eventos. Paginação, restauração de exclusões, recuperação de senha na interface, auditoria e gerenciamento de usuários ainda não estão implementados. O administrador pode redefinir o acesso no Supabase.
+- Agenda, tarefas, materiais, contatos e despesas continuam em preparação. Valores financeiros serão armazenados em centavos inteiros ou decimal; custos estimados de materiais não serão somados às despesas realizadas.
+- Próxima etapa: validar esta fatia em Supabase real e dispositivo móvel, depois adicionar Dexie/IndexedDB e fila com confirmação persistida, resolução explícita de conflitos e tombstones, antes de anunciar sincronização offline.
 
-Em tarefas na nuvem, usar o checkout existente: cada tarefa já tem ambiente isolado, sem criar worktrees. Não há serviço externo ou processo adicional obrigatório nesta fundação.
-
-## Pacote inicial para teste
-
-Extraia o ZIP, abra um terminal na pasta `marca-ah-producoes` e execute `npm ci`, `npm run build` e `npm start`. Abra o endereço local exibido pelo terminal no seu navegador. Requer Node.js 24 e acesso à internet para instalar dependências. No Windows, os comandos podem ser executados no PowerShell.
-
-Esta distribuição contém código-fonte e lockfile, sem credenciais ou dependências instaladas. É uma versão web para teste da fundação, não um APK nem uma versão com módulos completos. A logo incluída é uma adaptação da imagem enviada; o arquivo original não estava disponível para cópia direta.
+A logo é uma adaptação da imagem enviada pelo usuário. Não há credenciais ou dados pessoais no repositório.
