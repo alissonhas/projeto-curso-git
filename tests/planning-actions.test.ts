@@ -17,6 +17,6 @@ it('um conflito devolve a versão atual sem revalidar nem fazer nova tentativa a
  rpc.mockResolvedValueOnce({data:{status:'conflict',current:{version:2,name:'Atual'}},error:null});const result=await savePlanning({status:'idle',message:''},supplier());expect(result.status).toBe('conflict');expect(result.current?.name).toBe('Atual');expect(rpc).toHaveBeenCalledTimes(1);expect(revalidate).not.toHaveBeenCalled();
 });
 it('mudança no evento invalida agenda e listas com vínculos',async()=>{
- const form=new FormData();Object.entries({id:'11111111-1111-4111-8111-111111111111',operation_id:'22222222-2222-4222-8222-222222222222',version:'1',title:'Nova data',description:'',event_date:'2027-01-01'}).forEach(([key,value])=>form.set(key,value));
- expect((await saveEvent({status:'idle',message:''},form)).status).toBe('saved');expect(revalidate).toHaveBeenCalledWith('/agenda');expect(revalidate).toHaveBeenCalledWith('/materiais');expect(revalidate).toHaveBeenCalledWith('/tarefas');
+ const form=new FormData();Object.entries({id:'11111111-1111-4111-8111-111111111111',operation_id:'22222222-2222-4222-8222-222222222222',version:'1',title:'Nova data',city:'Cuiabá',description:'',event_date:'2027-01-01'}).forEach(([key,value])=>form.set(key,value));
+ expect((await saveEvent({status:'idle',message:''},form)).status).toBe('saved');expect(rpc).toHaveBeenCalledWith('mutate_event_with_city',expect.objectContaining({p_city:'Cuiabá'}));expect(revalidate).toHaveBeenCalledWith('/agenda');expect(revalidate).toHaveBeenCalledWith('/materiais');expect(revalidate).toHaveBeenCalledWith('/tarefas');
 });

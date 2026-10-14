@@ -23,7 +23,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
       <h2>Novo evento</h2><EventForm initialId={randomUUID()} operationId={randomUUID()} />
       <section className="event-list" aria-label="Eventos cadastrados">
         {data?.length === 0 && <p>Nenhum evento cadastrado. Comece pelo formulário acima.</p>}
-        {(data as EventRecord[] | null)?.map(event => <article key={event.id} className="event-row"><h2>{event.title}</h2><time dateTime={event.event_date}>{event.event_date.split('-').reverse().join('/')}</time><p>{event.description}</p><nav className="module-nav" aria-label={`Planejamento de ${event.title}`}><Link href={`/agenda#evento-${event.id}`}>Ver na agenda</Link><Link href={`/materiais?event=${event.id}`}>Materiais do evento</Link><Link href={`/tarefas?event=${event.id}`}>Ações e responsáveis</Link></nav><EventEditor record={event} /></article>)}
+        {(data as EventRecord[] | null)?.map(event => <article key={event.id} className="event-row"><h2>{event.title}</h2><time dateTime={event.event_date}>{event.event_date.split('-').reverse().join('/')}</time><p>Cidade: {event.city || 'Não informada'}</p><p>{event.description}</p><nav className="module-nav" aria-label={`Planejamento de ${event.title}`}><Link href={`/agenda#evento-${event.id}`}>Ver na agenda</Link><Link href={`/materiais?event=${event.id}`}>Materiais do evento</Link><Link href={`/tarefas?event=${event.id}`}>Ações e responsáveis</Link></nav><EventEditor record={event} /></article>)}
       </section>
     </>}
   </main>;

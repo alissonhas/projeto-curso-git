@@ -28,7 +28,7 @@ describe('Cadastros de planejamento', () => {
   it('rejeita versões inválidas e tipo arbitrário',()=>{const data=form();data.set('version','-1');expect(()=>parsePlanning(data)).toThrow();data.set('version','0');data.set('kind','users');expect(()=>parsePlanning(data)).toThrow();});
 });
 function event(id:string,date:string,deleted_at:string|null=null):EventRecord {
-  return {id,user_id:'fixture',title:id,description:'',event_date:date,version:1,created_at:'',updated_at:'',deleted_at};
+  return {id,user_id:'fixture',title:id,description:'',city:'',event_date:date,version:1,created_at:'',updated_at:'',deleted_at};
 }
 it('agenda reflete data alterada, ordem cronológica e exclui tombstones sem copiar registros',()=>{
   const first=event('a','2026-10-14');const second=event('b','2026-11-01');

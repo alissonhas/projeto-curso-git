@@ -17,7 +17,7 @@ export async function PlanningPage({ kind, eventFilter }: { kind: PlanningKind; 
   ]);
   const failed = recordsResult.error || eventsResult.error;
   const records = recordsResult.data ?? [], events = eventsResult.data ?? [];
-  const options = { events: events.map(item => ({ id:item.id,name:`${item.title} — ${item.event_date.split('-').reverse().join('/')}`,deleted_at:item.deleted_at })), suppliers: records.filter(item => item.kind === 'supplier').map(item => ({ id:item.id,name:item.name,deleted_at:item.deleted_at })) };
+  const options = { events: events.map(item => ({ id:item.id,name:`${item.title} — ${item.event_date.split('-').reverse().join('/')}${item.city ? ` — ${item.city}` : ''}`,deleted_at:item.deleted_at })), suppliers: records.filter(item => item.kind === 'supplier').map(item => ({ id:item.id,name:item.name,deleted_at:item.deleted_at })) };
   const items = records.filter(item => item.kind === kind && !item.deleted_at && (!eventFilter || item.event_id === eventFilter)).sort((a,b) => a.name.localeCompare(b.name,'pt-BR') || a.id.localeCompare(b.id));
   const linked = events.find(item => item.id === eventFilter);
   const validFilter = !eventFilter || !!linked;

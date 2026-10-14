@@ -21,3 +21,5 @@ it('valida o login sem modificar a senha', () => {
   expect(validLogin('invalido', 'teste')).toBe(false);
   expect(validLogin('pessoa@example.com', '')).toBe(false);
 });
+
+it('cidade do evento é opcional, normalizada e limitada',()=>{const data=eventForm();expect(parseEvent(data).city).toBe('');data.set('city',' Cuiabá ');expect(parseEvent(data).city).toBe('Cuiabá');data.set('city','x'.repeat(121));expect(()=>parseEvent(data)).toThrow('cidade');});

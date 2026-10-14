@@ -7,7 +7,7 @@ Aplicação web pessoal em Next.js 16, TypeScript e Tailwind 4. Logo AH, navega�
 O login fica bloqueado se não houver configuração. Não existe usuário/senha padrão nem modo de acesso sem autenticação.
 
 1. Crie um projeto em [Supabase](https://supabase.com/dashboard). Guarde a senha do banco com segurança; a aplicação não usa essa senha.
-2. Abra **SQL Editor** e execute o conteúdo de [supabase/migrations/202610140001_private_events.sql](supabase/migrations/202610140001_private_events.sql) uma vez no projeto novo, seguido por [202610140002_planning.sql](supabase/migrations/202610140002_planning.sql) e [202610140003_supplier_city.sql](supabase/migrations/202610140003_supplier_city.sql). Se já tiver outras tabelas com esses nomes, revise antes de aplicar. Não execute os arquivos em `tests/sql` no projeto real: são fixtures exclusivas do banco descartável.
+2. Abra **SQL Editor** e execute o conteúdo de [supabase/migrations/202610140001_private_events.sql](supabase/migrations/202610140001_private_events.sql) uma vez no projeto novo, seguido por [202610140002_planning.sql](supabase/migrations/202610140002_planning.sql) [202610140003_supplier_city.sql](supabase/migrations/202610140003_supplier_city.sql) e [202610140004_event_city.sql](supabase/migrations/202610140004_event_city.sql). Se já tiver outras tabelas com esses nomes, revise antes de aplicar. Não execute os arquivos em `tests/sql` no projeto real: são fixtures exclusivas do banco descartável.
 3. Em **Authentication → Users**, crie seu usuário com e-mail e senha; marque confirmação automática de e-mail se estiver criando manualmente. Copie o UUID desse usuário. Não envie a senha em chat nem coloque em código.
 4. Autorize somente esse UUID, executando no SQL Editor (substitua o texto abaixo pelo UUID real):
 
@@ -116,3 +116,9 @@ A nova migração, RLS, vínculos, atualizações e retries são testados em Pos
 Após a migração de planejamento 002, execute [202610140003_supplier_city.sql](supabase/migrations/202610140003_supplier_city.sql) no SQL Editor do Supabase. Não repita as migrações anteriores em um projeto já atualizado.
 
 Cidade é opcional e aceita até 120 caracteres; está disponível no cadastro, edição, lista e comparação de conflitos dos fornecedores. Registros existentes continuam válidos, com cidade vazia (“Não informada”), até serem editados. A migração preserva RLS, versões, idempotência e todos os registros. Clientes antigos que omitem cidade não apagam um valor já armazenado. Os testes SQL cobrem cadastro, edição, retries, preservação de dados antigos e limites do campo.
+
+## Atualização: cidade do evento
+
+Execute somente [202610140004_event_city.sql](supabase/migrations/202610140004_event_city.sql) no projeto já configurado. A migração exige a estrutura de Eventos da migração 001, preserva todos os registros e mantém a função antiga para compatibilidade. O app passa a usar `mutate_event_with_city`, com os mesmos controles de autenticação, versão, exclusão lógica e idempotência. Não há novas variáveis de ambiente.
+
+Cidade é opcional e aceita até 120 caracteres. Aparece no cadastro, edição, lista de eventos, agenda, comparação de conflitos e opções de seleção do evento no planejamento. Eventos existentes mostram “Não informada” até serem editados. Clientes antigos não apagam a cidade já registrada. Após aplicar o SQL e atualizar a aplicação, cadastre/edite a cidade de um evento, recarregue e confirme a informação também na Agenda.

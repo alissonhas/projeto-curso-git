@@ -13,6 +13,7 @@ afterEach(cleanup);
 async function fill() {
   const user = userEvent.setup();
   await user.type(screen.getByLabelText('Título'), 'Meu rascunho');
+  await user.type(screen.getByLabelText('Cidade'), 'Cuiabá');
   await user.type(screen.getByLabelText('Data do evento'), '2026-10-14');
   await user.type(screen.getByLabelText('Descrição'), 'Detalhes ainda não confirmados');
   return user;
@@ -28,6 +29,7 @@ it('preserva rascunho e UUID de operação no retry após erro', async () => {
   await user.click(screen.getByRole('button', { name: 'Salvar evento' }));
   await screen.findByRole('alert');
   expect((screen.getByLabelText('Título') as HTMLInputElement).value).toBe('Meu rascunho');
+  expect((screen.getByLabelText('Cidade') as HTMLInputElement).value).toBe('Cuiabá');
   expect((screen.getByLabelText('Descrição') as HTMLTextAreaElement).value).toBe('Detalhes ainda não confirmados');
   await user.click(screen.getByRole('button', { name: 'Salvar evento' }));
   await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
@@ -52,6 +54,7 @@ it('conflito exige decisão explícita e usa a versão atual sem apagar o rascun
   await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
   expect(submitted[1].get('version')).toBe('4');
   expect(submitted[1].get('title')).toBe('Meu rascunho');
+  expect(submitted[1].get('city')).toBe('Cuiabá');
   expect(submitted[1].get('operation_id')).not.toBe(submitted[0].get('operation_id'));
 });
 it('limpa campos e gera um novo registro somente após confirmação do salvamento', async () => {
