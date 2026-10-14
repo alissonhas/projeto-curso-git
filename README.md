@@ -7,7 +7,7 @@ Aplicação web pessoal em Next.js 16, TypeScript e Tailwind 4. Logo AH, navega�
 O login fica bloqueado se não houver configuração. Não existe usuário/senha padrão nem modo de acesso sem autenticação.
 
 1. Crie um projeto em [Supabase](https://supabase.com/dashboard). Guarde a senha do banco com segurança; a aplicação não usa essa senha.
-2. Abra **SQL Editor** e execute o conteúdo de [supabase/migrations/202610140001_private_events.sql](supabase/migrations/202610140001_private_events.sql) uma vez no projeto novo. Se já tiver outras tabelas com esses nomes, revise antes de aplicar. Não execute os arquivos em `tests/sql` no projeto real: são fixtures exclusivas do banco descartável.
+2. Abra **SQL Editor** e execute o conteúdo de [supabase/migrations/202610140001_private_events.sql](supabase/migrations/202610140001_private_events.sql) uma vez no projeto novo, seguido por [202610140002_planning.sql](supabase/migrations/202610140002_planning.sql). Se já tiver outras tabelas com esses nomes, revise antes de aplicar. Não execute os arquivos em `tests/sql` no projeto real: são fixtures exclusivas do banco descartável.
 3. Em **Authentication → Users**, crie seu usuário com e-mail e senha; marque confirmação automática de e-mail se estiver criando manualmente. Copie o UUID desse usuário. Não envie a senha em chat nem coloque em código.
 4. Autorize somente esse UUID, executando no SQL Editor (substitua o texto abaixo pelo UUID real):
 
