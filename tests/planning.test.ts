@@ -5,13 +5,13 @@ import { loadAllPages } from '../src/lib/pagination';
 import type { EventRecord } from '../src/lib/events';
 function form(kind = 'supplier') {
   const data = new FormData();
-  Object.entries({ kind, id:'11111111-1111-4111-8111-111111111111', operation_id:'22222222-2222-4222-8222-222222222222',version:'0',name:'Empresa AH',contact:'WhatsApp informado',product:'Som e iluminação',event_id:'33333333-3333-4333-8333-333333333333',quantity:'2',responsible:'Ana' }).forEach(([k,v])=>data.set(k,v));
+  Object.entries({ kind, id:'11111111-1111-4111-8111-111111111111', operation_id:'22222222-2222-4222-8222-222222222222',version:'0',name:'Empresa AH',contact:'WhatsApp informado',city:'',product:'Som e iluminação',event_id:'33333333-3333-4333-8333-333333333333',quantity:'2',responsible:'Ana' }).forEach(([k,v])=>data.set(k,v));
   return data;
 }
 describe('Cadastros de planejamento', () => {
-  it('fornecedor envia somente os três campos de negócio e metadados padrão', () => {
+  it('fornecedor envia os campos de negócio básicos e metadados padrão', () => {
     const parsed = parsePlanning(form());
-    expect(parsed.data).toEqual({name:'Empresa AH',contact:'WhatsApp informado',product:'Som e iluminação',quantity:1,responsible:'',completed:false,event_id:null,supplier_id:null});
+    expect(parsed.data).toEqual({name:'Empresa AH',contact:'WhatsApp informado',city:'',product:'Som e iluminação',quantity:1,responsible:'',completed:false,event_id:null,supplier_id:null});
   });
   it('material exige evento, quantidade inteira e permite fornecedor opcional', () => {
     const data=form('material'); expect(parsePlanning(data).data.quantity).toBe(2);
@@ -45,3 +45,5 @@ it('carrega todas as páginas e não exibe uma lista parcial quando a próxima c
   const fail=vi.fn().mockResolvedValueOnce({data:Array(500).fill(0),error:null}).mockResolvedValueOnce({data:null,error:new Error('offline')});
   expect((await loadAllPages<number>(fail)).data).toBeNull();
 });
+
+it('cidade é opcional, normalizada e limitada a 120 caracteres',()=>{const data=form();data.set('city','  Cuiabá  ');expect(parsePlanning(data).data.city).toBe('Cuiabá');data.set('city','x'.repeat(121));expect(()=>parsePlanning(data)).toThrow('cidade');});

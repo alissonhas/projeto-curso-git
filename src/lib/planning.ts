@@ -2,7 +2,7 @@ import { UUID_PATTERN } from './validation';
 export const planningKinds = ['supplier', 'material', 'action'] as const;
 export type PlanningKind = typeof planningKinds[number];
 export type PlanningRecord = {
-  id: string; user_id: string; kind: PlanningKind; name: string; contact: string; product: string;
+  id: string; user_id: string; kind: PlanningKind; name: string; contact: string; product: string; city: string;
   quantity: number; responsible: string; completed: boolean; event_id: string | null; supplier_id: string | null;
   version: number; created_at: string; updated_at: string; deleted_at: string | null;
 };
@@ -23,6 +23,8 @@ export function parsePlanning(form: FormData) {
   const contact = kind === 'supplier' ? text('contact') : '';
   const product = kind === 'supplier' ? text('product') : '';
   if (kind === 'supplier' && (!contact || contact.length > 200 || !product || product.length > 500)) throw new Error('Informe contato (até 200 caracteres) e produto ofertado (até 500 caracteres).');
+  const city = kind === 'supplier' ? text('city') : '';
+  if (city.length > 120) throw new Error('A cidade deve ter até 120 caracteres.');
   const responsible = kind === 'action' ? text('responsible') : '';
   if (kind === 'action' && (!responsible || responsible.length > 160)) throw new Error('Informe o responsável pela ação (até 160 caracteres).');
   const quantityText = kind === 'material' ? text('quantity') : '1';
@@ -32,7 +34,7 @@ export function parsePlanning(form: FormData) {
   if (kind !== 'supplier' && (!eventId || !UUID_PATTERN.test(eventId))) throw new Error('Selecione o evento deste cadastro.');
   if (supplierId && !UUID_PATTERN.test(supplierId)) throw new Error('Fornecedor inválido.');
   return { id, operationId, version: Number(versionText), kind, deleted: text('deleted') === 'true', data: {
-    name, contact, product, quantity: Number(quantityText), responsible,
+    name, contact, product, ...(kind === 'supplier' ? { city } : {}), quantity: Number(quantityText), responsible,
     completed: kind === 'action' && form.get('completed') === 'on', event_id: eventId, supplier_id: supplierId,
   } };
 }

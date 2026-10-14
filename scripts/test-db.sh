@@ -12,7 +12,7 @@ for attempt in {1..30}; do
   sleep 1
 done
 if [ "$ready" != true ]; then docker logs "$container"; exit 1; fi
-for file in tests/sql/bootstrap.sql supabase/migrations/202610140001_private_events.sql tests/sql/events.sql supabase/migrations/202610140002_planning.sql tests/sql/planning.sql; do
+for file in tests/sql/bootstrap.sql supabase/migrations/202610140001_private_events.sql tests/sql/events.sql supabase/migrations/202610140002_planning.sql tests/sql/planning.sql supabase/migrations/202610140003_supplier_city.sql tests/sql/supplier-city.sql; do
   docker exec -i "$container" psql -U postgres -v ON_ERROR_STOP=1 < "$file"
 done
 # Duas chamadas concorrentes com o mesmo UUID de operação devem criar um registro só.

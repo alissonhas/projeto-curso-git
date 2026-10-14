@@ -9,7 +9,7 @@ export function PlanningForm({ kind, record, initialId, operationId, options, se
   kind: PlanningKind; record?: PlanningRecord; initialId: string; operationId: string; options: PlanningOptions; selectedEvent?: string; onClose?: () => void;
 }) {
   const [state, action, pending] = useActionState(savePlanning, initial);
-  const defaults = () => ({ name: record?.name ?? '', contact: record?.contact ?? '', product: record?.product ?? '', quantity: String(record?.quantity ?? 1), responsible: record?.responsible ?? '', completed: record?.completed ?? false, event_id: record?.event_id ?? selectedEvent, supplier_id: record?.supplier_id ?? '' });
+  const defaults = () => ({ name: record?.name ?? '', contact: record?.contact ?? '', product: record?.product ?? '', city: record?.city ?? '', quantity: String(record?.quantity ?? 1), responsible: record?.responsible ?? '', completed: record?.completed ?? false, event_id: record?.event_id ?? selectedEvent, supplier_id: record?.supplier_id ?? '' });
   const [fields, setFields] = useState(defaults);
   const [id, setId] = useState(initialId), [op, setOp] = useState(operationId);
   const [version, setVersion] = useState(record?.version ?? 0);
@@ -17,7 +17,7 @@ export function PlanningForm({ kind, record, initialId, operationId, options, se
   useEffect(() => {
     if (state.status === 'saved') {
       if (record) onClose?.();
-      else { setFields({ name:'',contact:'',product:'',quantity:'1',responsible:'',completed:false,event_id:selectedEvent,supplier_id:'' }); setId(crypto.randomUUID()); setOp(crypto.randomUUID()); setDeleting(false); }
+      else { setFields({ name:'',contact:'',product:'',city:'',quantity:'1',responsible:'',completed:false,event_id:selectedEvent,supplier_id:'' }); setId(crypto.randomUUID()); setOp(crypto.randomUUID()); setDeleting(false); }
     }
   }, [state, record, onClose, selectedEvent]);
   const conflict = state.status === 'conflict' && !resolved;
@@ -28,6 +28,7 @@ export function PlanningForm({ kind, record, initialId, operationId, options, se
     <label>{kind === 'supplier' ? 'Nome' : kind === 'material' ? 'Material' : 'Ação'}<input name="name" value={fields.name} onChange={event => change('name',event.target.value)} required maxLength={160} disabled={pending} /></label>
     {kind === 'supplier' ? <>
       <label>Contato<input name="contact" value={fields.contact} onChange={event => change('contact',event.target.value)} required maxLength={200} placeholder="Telefone, WhatsApp ou e-mail" disabled={pending} /></label>
+      <label>Cidade<input name="city" value={fields.city} onChange={event => change('city',event.target.value)} maxLength={120} placeholder="Ex.: Cuiabá" disabled={pending} /></label>
       <label>Produto ofertado<input name="product" value={fields.product} onChange={event => change('product',event.target.value)} required maxLength={500} disabled={pending} /></label>
     </> : <label>Evento<select name="event_id" value={fields.event_id} onChange={event => change('event_id',event.target.value)} required disabled={pending}><option value="">Selecione um evento</option>{choices(options.events.filter(item => !item.deleted_at || item.id === fields.event_id))}</select></label>}
     {kind === 'material' && <>
@@ -46,7 +47,7 @@ export function PlanningForm({ kind, record, initialId, operationId, options, se
   {state.message && <p role={state.status === 'saved' ? 'status' : 'alert'}>{state.message}</p>}
   {conflict && <section className="setup-notice"><div><strong>Versão atual no servidor</strong>{state.current ? <>
     <p>Nome: {state.current.name}</p>
-    {kind === 'supplier' && <><p>Contato: {state.current.contact}</p><p>Produto ofertado: {state.current.product}</p></>}
+    {kind === 'supplier' && <><p>Contato: {state.current.contact}</p><p>Cidade: {state.current.city || 'Não informada'}</p><p>Produto ofertado: {state.current.product}</p></>}
     {kind !== 'supplier' && <p>Evento: {options.events.find(item => item.id === state.current?.event_id)?.name ?? state.current.event_id}</p>}
     {kind === 'material' && <><p>Quantidade: {state.current.quantity}</p><p>Fornecedor: {options.suppliers.find(item => item.id === state.current?.supplier_id)?.name ?? 'Sem fornecedor definido'}</p></>}
     {kind === 'action' && <><p>Responsável: {state.current.responsible}</p><p>Estado: {state.current.completed ? 'Concluída' : 'Pendente'}</p></>}

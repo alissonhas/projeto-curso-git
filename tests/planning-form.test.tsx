@@ -12,11 +12,13 @@ afterEach(cleanup);beforeEach(()=>save.mockReset());
 it('cadastro de fornecedor exibe apenas os campos básicos e preserva os dados no erro/retry',async()=>{
   const submitted:FormData[]=[];save.mockImplementation(async(_state,form:FormData)=>{submitted.push(form);return {status:'error',message:'Falha de rede.'};});
   render(<PlanningForm kind="supplier" initialId={id} operationId={op} options={options}/>);
-  const user=userEvent.setup();await user.type(screen.getByLabelText('Nome'),'Fornecedor teste');await user.type(screen.getByLabelText('Contato'),'WhatsApp teste');await user.type(screen.getByLabelText('Produto ofertado'),'Palco');
+  const user=userEvent.setup();await user.type(screen.getByLabelText('Nome'),'Fornecedor teste');await user.type(screen.getByLabelText('Contato'),'WhatsApp teste');await user.type(screen.getByLabelText('Cidade'),'Cuiabá');await user.type(screen.getByLabelText('Produto ofertado'),'Palco');
   expect(screen.queryByLabelText('Evento')).toBeNull();expect(screen.queryByLabelText('Responsável')).toBeNull();
   await user.click(screen.getByRole('button',{name:'Salvar fornecedor'}));await screen.findByRole('alert');
   expect((screen.getByLabelText('Nome') as HTMLInputElement).value).toBe('Fornecedor teste');
   await user.click(screen.getByRole('button',{name:'Salvar fornecedor'}));await waitFor(()=>expect(save).toHaveBeenCalledTimes(2));
+  expect(submitted[1].get('city')).toBe('Cuiabá');
+  expect((screen.getByLabelText('Cidade') as HTMLInputElement).value).toBe('Cuiabá');
   expect(submitted[1].get('operation_id')).toBe(submitted[0].get('operation_id'));
 });
 it('material envia quantidade e os vínculos selecionados',async()=>{

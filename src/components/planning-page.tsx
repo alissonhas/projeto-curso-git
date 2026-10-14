@@ -22,14 +22,14 @@ export async function PlanningPage({ kind, eventFilter }: { kind: PlanningKind; 
   const linked = events.find(item => item.id === eventFilter);
   const validFilter = !eventFilter || !!linked;
   return <main className="event-shell"><ModuleHeader title={info.title} />
-    <p>{kind === 'supplier' ? 'Cadastre somente nome, contato e produto ofertado.' : kind === 'material' ? 'Organize os materiais de cada evento e altere quantidades ou fornecedor. Materiais não geram despesas automaticamente.' : 'Defina cada ação do evento, seu responsável e se já foi concluída.'}</p>
+    <p>{kind === 'supplier' ? 'Cadastre nome, contato, cidade e produto ofertado.' : kind === 'material' ? 'Organize os materiais de cada evento e altere quantidades ou fornecedor. Materiais não geram despesas automaticamente.' : 'Defina cada ação do evento, seu responsável e se já foi concluída.'}</p>
     {failed ? <p role="alert">Não foi possível carregar os cadastros. Confira a conexão e execute a nova migração de planejamento no Supabase. Os eventos existentes permanecem preservados.</p> : !validFilter ? <p role="alert">O evento do filtro não foi encontrado no seu espaço. <Link href={info.route}>Remover filtro</Link></p> : <>
       {eventFilter && <p className="setup-notice">Mostrando: {linked?.title}{linked?.deleted_at ? ' (evento excluído)' : ''} · <Link href={info.route}>Ver todos</Link></p>}
       {kind === 'supplier' || events.some(item => !item.deleted_at) ? <><h2>{kind === 'action' ? 'Nova ação' : `Novo ${info.singular}`}</h2><PlanningForm kind={kind} initialId={randomUUID()} operationId={randomUUID()} options={options} selectedEvent={linked && !linked.deleted_at ? linked.id : ''} /></> : <p>Cadastre um evento ativo antes de adicionar {kind === 'material' ? 'materiais' : 'ações'}. <Link href="/eventos">Abrir Eventos</Link></p>}
       <section className="event-list" aria-label={`${info.title} cadastrados`}>
         {!items.length && <p>Nenhum cadastro encontrado{eventFilter ? ' para este evento' : ''}.</p>}
         {items.map(item => <article className="event-row" key={item.id}><h2>{item.name}</h2>
-          {kind === 'supplier' ? <><p>Contato: {item.contact}</p><p>Produto ofertado: {item.product}</p></> : <p>Evento: {events.find(event => event.id === item.event_id)?.title ?? 'Não disponível'}{events.find(event => event.id === item.event_id)?.deleted_at ? ' (excluído)' : ''}</p>}
+          {kind === 'supplier' ? <><p>Contato: {item.contact}</p><p>Cidade: {item.city || 'Não informada'}</p><p>Produto ofertado: {item.product}</p></> : <p>Evento: {events.find(event => event.id === item.event_id)?.title ?? 'Não disponível'}{events.find(event => event.id === item.event_id)?.deleted_at ? ' (excluído)' : ''}</p>}
           {kind === 'material' && <><p>Quantidade: {item.quantity.toLocaleString('pt-BR')}</p><p>Fornecedor: {item.supplier_id ? records.find(supplier => supplier.id === item.supplier_id)?.name ?? 'Não disponível' : 'Sem fornecedor definido'}{records.find(supplier => supplier.id === item.supplier_id)?.deleted_at ? ' (excluído)' : ''}</p></>}
           {kind === 'action' && <><p>Responsável: {item.responsible}</p><p>Estado: {item.completed ? 'Concluída' : 'Pendente'}</p></>}
           <PlanningEditor record={item} options={options} />

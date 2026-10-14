@@ -1,13 +1,13 @@
 # Marca AH Produções — v0.3
 
-Aplicação web pessoal em Next.js 16, TypeScript e Tailwind 4. Logo AH, navegação responsiva, login por e-mail/senha com Supabase, autorização por lista de usuários e Eventos, agenda automática, materiais por evento, ações com responsáveis e fornecedores básicos. PWA com instalação e página offline sem dados privados em cache.
+Aplicação web pessoal em Next.js 16, TypeScript e Tailwind 4. Logo AH, navegação responsiva, login por e-mail/senha com Supabase, autorização por lista de usuários e Eventos, agenda automática, materiais por evento, ações com responsáveis e fornecedores com cidade. PWA com instalação e página offline sem dados privados em cache.
 
 ## Ativar na Vercel e no Supabase
 
 O login fica bloqueado se não houver configuração. Não existe usuário/senha padrão nem modo de acesso sem autenticação.
 
 1. Crie um projeto em [Supabase](https://supabase.com/dashboard). Guarde a senha do banco com segurança; a aplicação não usa essa senha.
-2. Abra **SQL Editor** e execute o conteúdo de [supabase/migrations/202610140001_private_events.sql](supabase/migrations/202610140001_private_events.sql) uma vez no projeto novo, seguido por [202610140002_planning.sql](supabase/migrations/202610140002_planning.sql). Se já tiver outras tabelas com esses nomes, revise antes de aplicar. Não execute os arquivos em `tests/sql` no projeto real: são fixtures exclusivas do banco descartável.
+2. Abra **SQL Editor** e execute o conteúdo de [supabase/migrations/202610140001_private_events.sql](supabase/migrations/202610140001_private_events.sql) uma vez no projeto novo, seguido por [202610140002_planning.sql](supabase/migrations/202610140002_planning.sql) e [202610140003_supplier_city.sql](supabase/migrations/202610140003_supplier_city.sql). Se já tiver outras tabelas com esses nomes, revise antes de aplicar. Não execute os arquivos em `tests/sql` no projeto real: são fixtures exclusivas do banco descartável.
 3. Em **Authentication → Users**, crie seu usuário com e-mail e senha; marque confirmação automática de e-mail se estiver criando manualmente. Copie o UUID desse usuário. Não envie a senha em chat nem coloque em código.
 4. Autorize somente esse UUID, executando no SQL Editor (substitua o texto abaixo pelo UUID real):
 
@@ -95,7 +95,7 @@ A logo é uma adaptação da imagem enviada pelo usuário. Não há credenciais 
 
 A agenda utiliza a tabela `events` existente: todos os eventos ativos aparecem agrupados por mês, sem cadastro adicional nem cópias. Ao mudar a data ou excluir um evento, a agenda reflete o estado atual quando carregada novamente.
 
-Em Eventos, use **Materiais do evento** ou **Ações e responsáveis**. Esses links filtram o planejamento daquele evento. Nos módulos gerais, é possível selecionar o evento no formulário, alterar os vínculos e editar/excluir os registros. **Fornecedores** contém somente nome, contato e produto ofertado como informações de negócio. Quantidades de materiais são inteiras e não geram despesas automaticamente.
+Em Eventos, use **Materiais do evento** ou **Ações e responsáveis**. Esses links filtram o planejamento daquele evento. Nos módulos gerais, é possível selecionar o evento no formulário, alterar os vínculos e editar/excluir os registros. **Fornecedores** contém nome, contato, cidade e produto ofertado como informações de negócio. Quantidades de materiais são inteiras e não geram despesas automaticamente.
 
 Responsáveis são nomes informados pelo usuário, sem criar contas de acesso para essas pessoas. Fornecedores também não recebem acesso ao app. Todas as consultas e ações continuam exigindo o usuário autenticado e autorizado; o banco verifica a propriedade dos eventos e fornecedores antes de aceitar um vínculo.
 
@@ -104,9 +104,15 @@ Os novos registros possuem UUID, `user_id`, timestamps, versão, exclusão lógi
 Teste no app real após aplicar a migração:
 
 1. Abra Agenda e confira o evento já cadastrado. Altere sua data em Eventos e confirme a nova posição na Agenda.
-2. Cadastre um fornecedor com nome, contato e produto ofertado, edite-o e recarregue.
+2. Cadastre um fornecedor com nome, contato, cidade e produto ofertado, edite-o e recarregue.
 3. No evento, adicione um material, quantidade e fornecedor; altere a quantidade e confirme a persistência.
 4. Adicione uma ação e seu responsável; altere o responsável, marque como concluída e recarregue.
 5. Repita a edição em duas abas para verificar conflitos. Exclua um registro de teste e confirme que sai das listas.
 
 A nova migração, RLS, vínculos, atualizações e retries são testados em PostgreSQL descartável; formulários e ações têm testes locais. A nova integração no seu Supabase depende da aplicação da migração e desse teste autenticado. O suporte offline continua restrito à página pública de aviso: não há edição nem sincronização offline.
+
+## Atualização: cidade do fornecedor
+
+Após a migração de planejamento 002, execute [202610140003_supplier_city.sql](supabase/migrations/202610140003_supplier_city.sql) no SQL Editor do Supabase. Não repita as migrações anteriores em um projeto já atualizado.
+
+Cidade é opcional e aceita até 120 caracteres; está disponível no cadastro, edição, lista e comparação de conflitos dos fornecedores. Registros existentes continuam válidos, com cidade vazia (“Não informada”), até serem editados. A migração preserva RLS, versões, idempotência e todos os registros. Clientes antigos que omitem cidade não apagam um valor já armazenado. Os testes SQL cobrem cadastro, edição, retries, preservação de dados antigos e limites do campo.
